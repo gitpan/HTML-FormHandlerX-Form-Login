@@ -1,5 +1,8 @@
 package HTML::FormHandlerX::Form::Login;
 
+# TODO: disable the email field when coming with just a token
+
+
 use 5.006;
 
 use strict;
@@ -15,7 +18,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -107,7 +110,19 @@ All 3 fields are required, and validation will also check the C<confirm_password
 
 Provide the C<email> B<or> C<username> to validate, the form will then have a C<token> for you.
 
-You can then send this token to the user via email to verify their email.
+You can then send this C<token> to the user via email to verify their identity.
+
+You need to supply a (private) C<token_salt> to make sure your C<token>s are not guessable.  This can be anything you like.
+
+Tokens expire by default after 24 hours from the date/time of issue.  To change
+this, either supply an epoch timestamp of when to expire, or give a human-friendly format of how long to wait.  We like things like:
+
+2h - 2 hours
+3d - 3 days
+4w - 4 weeks
+5m - 5 months
+
+If you specify C<add_token_field> the value of this field in the form will be included in the token.  This can be useful when the token is sent back, to identify the user.
 
  my $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email ) ] );
  
@@ -124,51 +139,58 @@ You can then send this token to the user via email to verify their email.
          my $token = $form->token;
  }
 
-Here we either use the C<email> field, or the C<username>.  Process the form to ensure the params are valid.
+The token is comprised of a L<Digest::SHA> hash, so can be a tad long, but has much less chance of collisions compared to an MD5.
 
-You can then request the C<token>, which you would send to the user to verify their email address.
+=head2 Reset Password - Stage 1
 
-Send them back to a URL with the C<token>.
+You will usually give the token to the user in an email so they can verify they own the email address.
 
-You need to specify a C<token_salt> in order to get a token at all, otherwise the token will be an empty string.
+This step is for just showing the user a reset-password form.
 
-Use C<add_token_field> to include a field from the form in the token itself, you will
-want this to identify the user when they come to actually reset their password.  You could put this in the URL yourself
-somehow, maybe with a user ID, but this is a little cleaner. 
+The first step when the user comes back to reset their password, is to check they have not fiddled with the token.
 
-Every C<token> will expire in 1 days time by default.  you can override this with C<token_expires>, either
-supplying an epoch timestamp, or a friendlier version, ie, C<6m>.
+You can safely skip this step, we check the token again when they/you actually try to change the password, this just lets you stop them in their tracks a little sooner.
 
-When the user follows your link containing the token, we will firstly validate that alone to ensure it has not been tampered with.
+Setting the C<token_salt> is required, and must obviously be the same C<salt> as used in the forgot-password call.
+
+C<add_token_field> as you did during the forgot-password process.  When you render the form it will show the C<email> field, which probably wants disabling. 
 
  $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token ) ] );
  
  $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
  
+ $form->add_token_field( 'email' );
+ 
  $form->process( params => { token => $token } );
-	
+ 
  if ( $form->validated ) { }
 
-You need to specify the same salt as used previously.
+If the form validates at this stage, 
 
-Now render the form, the token is a hidden field, and the field added with C<add_reset_password_token_field> will also be in the form.
+=head2 Reset Password - Stage 2
 
-Final validation comes when you have the new password along with the token...
+You have now shown the user a form to enter a new password (and confirm it).
+
+Either hidden in that form, or as a cookie, you have also stored the token.
 
  $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token password confirm_password ) ] );
  
  $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
-
+ 
  $form->add_token_field( 'email' );
-         
+ 
  $form->process( params => { token            => $token,
                              password         => $password,
                              confirm_password => $confirm_password,
                            } );
  
  if ( $form->validated ) { }
+ 
+If you specified the C<token_field> as C<email>, you can now collect that from the form as the record to update safely.
 
+ $form->field( 'email' )->value;
 
+In this case.
 
 =cut
 
@@ -477,9 +499,9 @@ sub _munge_params
 			$self->params->{ $field } = shift @token_parts;
 		}
 	}
+	
+	$self->next::method;
 }
-
-
 
 =head1 AUTHOR
 
