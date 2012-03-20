@@ -1,0 +1,545 @@
+package HTML::FormHandlerX::Form::Login;
+
+use 5.006;
+
+use strict;
+use warnings;
+
+=head1 NAME
+
+HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
+
+=head1 VERSION
+
+Version 0.01
+
+=cut
+
+our $VERSION = '0.01';
+
+=head1 SYNOPSIS
+
+Performs login form validation, including changing passwords, forgotten passwords, and resetting passwords.
+
+If you are working under Catalyst, take a look at L<CatalystX::SimpleLogin>.
+
+Login with either an C<email> B<or> C<username> parameter.
+
+ my $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email password ) ] );
+ 
+ $form->process( params => { email => $email, password => $password } );
+
+Changing a password...
+
+ my $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( old_password password confirm_password ) ] );
+ 
+ $form->process( params => { old_password     => $old_password,
+                             password         => $password,
+                             confirm_password => $confirm_password,
+                           } );
+
+Forgot password, just validates an C<email>, or C<username>.
+
+Use this to create a C<token> to send to the user to verify their email address.
+
+ my $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email ) ] );
+ 
+ $form->process( params => { email => $email } );
+ 
+ if ( $form->validated )
+ {
+         $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
+
+         my $token = $form->token;
+ }
+
+Coming back from an email link, if the form validates, you would show the password reset form (carry the token in a hidden field or cookie).
+
+ $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token ) ] );
+ 
+ $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
+ 
+ $form->process( params => { token => $token } );
+
+When trying to actually reset a password (kee...
+
+ $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token password confirm_password ) ] );
+ 
+ $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
+
+ $form->process( params => { token            => $token,
+                             password         => $password,
+                             confirm_password => $confirm_password,
+                           } );
+
+=head1 DESCRIPTION
+
+This module will validate your forms.  It does not perform any actual authentication, that is still left for you.
+
+=head2 Login
+
+You can choose between C<email> and C<username> for the unique identifier.
+
+Using C<email> brings in validation using L<Email::Valid>.
+
+C<email>/C<username> and C<password> are all required fields, so will fail validation if empty.
+
+ my $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email password ) ] );
+ 
+ $form->process( params => { email => $email, password => $password } );
+
+=head2 Change Password
+
+Instantiate the form by activating the 3 fields: C<old_password>, C<password>, and C<confirm_password>.
+
+All 3 fields are required, and validation will also check the C<confirm_password> matches the C<password>.
+
+ my $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( old_password password confirm_password ) ] );
+ 
+ $form->process( params => { old_password     => $old_password,
+                             password         => $password,
+                             confirm_password => $confirm_password,
+                           } );
+ 
+ if ( $form->validated ) { }
+
+=head2 Forgot Password
+
+Provide the C<email> B<or> C<username> to validate, the form will then have a C<token> for you.
+
+You can then send this token to the user via email to verify their email.
+
+ my $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email ) ] );
+ 
+ $form->process( params => { email => $email } );
+ 
+ if ( $form->validated )
+ {
+         $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
+         
+         $form->add_token_field( 'email' );
+         
+         $form->token_expires( '3h' );
+  
+         my $token = $form->token;
+ }
+
+Here we either use the C<email> field, or the C<username>.  Process the form to ensure the params are valid.
+
+You can then request the C<token>, which you would send to the user to verify their email address.
+
+Send them back to a URL with the C<token>.
+
+You need to specify a C<token_salt> in order to get a token at all, otherwise the token will be an empty string.
+
+Use C<add_token_field> to include a field from the form in the token itself, you will
+want this to identify the user when they come to actually reset their password.  You could put this in the URL yourself
+somehow, maybe with a user ID, but this is a little cleaner. 
+
+Every C<token> will expire in 1 days time by default.  you can override this with C<token_expires>, either
+supplying an epoch timestamp, or a friendlier version, ie, C<6m>.
+
+When the user follows your link containing the token, we will firstly validate that alone to ensure it has not been tampered with.
+
+ $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token ) ] );
+ 
+ $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
+ 
+ $form->process( params => { token => $token } );
+	
+ if ( $form->validated ) { }
+
+You need to specify the same salt as used previously.
+
+Now render the form, the token is a hidden field, and the field added with C<add_reset_password_token_field> will also be in the form.
+
+Final validation comes when you have the new password along with the token...
+
+ $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token password confirm_password ) ] );
+ 
+ $form->token_salt( 'SoMeThInG R4nD0M AnD PR1V4te' );
+
+ $form->add_token_field( 'email' );
+         
+ $form->process( params => { token            => $token,
+                             password         => $password,
+                             confirm_password => $confirm_password,
+                           } );
+ 
+ if ( $form->validated ) { }
+
+
+
+=cut
+
+use HTML::FormHandler::Moose;
+
+extends 'HTML::FormHandler';
+
+use Digest::SHA qw( sha512_hex );
+use Email::Valid;
+
+=head1 METHODS
+
+=head2 Attributes
+
+=head3 token
+
+ $form->token
+
+Returns a unique string for the C<email> or C<username> validated by the form.
+
+You typically send this to the users email.
+
+=cut
+
+has token => ( is => 'rw', isa => 'Str', lazy_build => 1 );
+
+=head3 token_fields
+
+ $form->add_token_field( 'email' );
+
+Specifies which fields to include in the token for you to identify which user it is trying to reset their password when they come back.
+
+Either C<email> or C<username> is normal.
+
+=cut
+
+has _token_fields => ( is  => 'rw',
+                       isa => 'ArrayRef[Str]',
+                       default => sub { [] },
+                       traits => ['Array'],
+                       handles => { token_fields    => 'elements',
+                                    add_token_field => 'push',
+                                  }
+                     );
+
+=head3 token_salt
+
+ $form->token_salt
+
+Your own (random string) salt used to create the reset-password token.
+
+=cut
+
+has token_salt => ( is => 'rw', isa => 'Str', default => '' );
+
+=head3 token_expires
+
+ $form->token_expires
+
+Dictates how long the token is valid for, default is 1 day.
+
+Possible formats are 2h, 3d, 6w, 1m, or an epoch timestamp.
+
+=cut
+
+has token_expires => ( is => 'rw', isa => 'Int', default => 86400 ); # 1 day
+
+=head2 Fields
+
+=head3 token
+
+ $form->field('token')
+
+This field is used when attempting to reset a password.
+
+=cut
+
+has_field token => ( type         => 'Hidden',
+                     required     => 1,
+                     messages     => { required => "Missing token." },
+                     wrapper_attr => { id => 'field-token', },
+                     inactive     => 1,
+                   );
+
+=head3 email / username
+
+ $form->field('email')
+ 
+ $form->field('username')
+
+The C<username> field, or use the specific C<email> field for extra validation (employing Email::Valid).
+
+=cut
+
+has_field username => ( type         => 'Text',
+                        required     => 1,
+                        messages     => { required => 'Your username is required.' },
+                        tags         => { no_errors => 1 },
+                        wrapper_attr => { id => 'field-username' },
+                        inactive     => 1,
+                      );
+
+has_field email => ( type         => 'Text',
+                     required     => 1,
+                     messages     => { required => 'Your email is required.' },
+                     tags         => { no_errors => 1 },
+                     wrapper_attr => { id => 'field-email' },
+                     inactive     => 1,
+                   );
+                      
+=head3 old_password
+
+ $form->field('old_password')
+
+Required when changing a known password.
+
+=cut
+
+has_field old_password => ( type         => 'Password',
+                            required     => 1,
+                            messages     => { required => "Your old password is required." },
+                            tags         => { no_errors => 1 },
+                            wrapper_attr => { id => 'field-old-password', },
+                            inactive     => 1,
+                          );
+
+=head3 password
+
+ $form->field('password')
+
+Used for logging in, changing and/or resetting a password to something new.
+
+=cut
+
+has_field password => ( type         => 'Password',
+                        required     => 1,
+                        messages     => { required => "Your password is required." },
+                        tags         => { no_errors => 1 },
+                        wrapper_attr => { id => 'field-password', },
+                        inactive     => 1,
+                      );
+
+=head3 confirm_password
+
+ $form->field('confirm_password')
+
+Required for changing and/or resetting the password.
+
+=cut
+
+has_field confirm_password => ( type           => 'PasswordConf',
+                                required       => 1,
+                                password_field => 'password',
+                                messages       => { required => "You must confirm your password." },
+                                tags           => { no_errors => 1 },
+                                wrapper_attr   => { id => 'field-confirm-password', },
+                                inactive       => 1,
+                              );
+
+=head3 remember
+
+ $form->field('remember')
+
+Useful for a "remember me" checkbox.
+
+=cut
+
+has_field remember => ( type         => 'Checkbox',
+                        tags         => { no_errors => 1 },
+                        wrapper_attr => { id => 'field-remember', },
+                        inactive     => 1,
+                      );
+
+=head3 submit
+
+ $form->field('submit')
+
+The submit button.
+
+=cut
+
+has_field submit => ( type         => 'Submit',
+                      value        => 'Login',
+                      wrapper_attr => { id => 'field-submit', },
+                    );
+
+=head2 Validation
+
+=head3 validate_email
+
+The internal validation of the email address field, using L<Email::Valid>.
+
+=cut
+
+sub validate_email
+{
+	my ( $self, $field ) = @_;
+
+	if ( ! Email::Valid->address( $field->value ) )
+	{
+		$field->add_error( "Your email address looks invalid." );
+	}
+}
+
+=head3 validate_token
+
+The internal validation of the token when attempting to reset a password.
+
+=cut
+
+sub validate_token
+{
+	my ( $self, $field ) = @_;
+	
+	my @token_parts = split( ':', $field->value );
+
+	my $token = pop @token_parts;
+	
+	if ( $token ne sha512_hex( $self->token_salt . join( '', @token_parts ) ) )
+	{
+		$field->add_error("Invalid token.");
+	}
+	
+	my $time  = pop @token_parts;
+
+	if ( time > $time )
+	{
+		$field->add_error("Expired token.");
+	}
+}
+
+=head3 html_attributes
+
+This method has been populated to ensure all fields in error have the C<error> CSS class assigned to the labels.
+
+=cut
+
+sub html_attributes
+{
+	my ($self, $field, $type, $attr, $result) = @_;
+    
+	if( $type eq 'label' && $result->has_errors )
+	{
+		push @{$attr->{class}}, 'error';
+	}
+}
+
+around token_expires => sub {
+	my $orig = shift;
+	my $self = shift;
+
+	if ( my $arg = shift )
+	{
+		if ( $arg =~ /(\d+)h/i )
+		{
+			$arg = $1 * 3600;
+		}
+		elsif ( $arg =~ /(\d+)d/i )
+		{
+			$arg = $1 * 86400;
+		}
+		elsif ( $arg =~ /(\d+)w/i )
+		{
+			$arg = $1 * 604800;
+		}
+		elsif ( $arg =~ /(\d+)m/i )
+		{
+			$arg = $1 * 2629743;
+		}
+		
+		return $self->$orig( $arg );
+	}
+
+	return $self->$orig;
+};
+
+sub _build_token
+{
+	my $self = shift;
+
+	return '' if $self->token_salt eq '';   # no salt, no token
+	
+	my $time = time + $self->token_expires;
+
+	my @field_value_list = map { $self->field( $_ )->value } $self->token_fields;
+
+	my $token = join( ':', @field_value_list, $time, sha512_hex( $self->token_salt . join( '', @field_value_list ) . $time ) );
+
+	return $token;
+}
+
+sub _munge_params
+{
+	my $self = shift;
+	
+	if ( exists $self->params->{ token } )
+	{
+		# the order is drastically important
+		
+		my @token_parts = split( ':', $self->params->{ token } );
+
+		foreach my $field ( $self->token_fields )
+		{
+			$self->field( $field )->inactive(0);
+
+			$self->params->{ $field } = shift @token_parts;
+		}
+	}
+}
+
+
+
+=head1 AUTHOR
+
+Rob Brown, C<< <rob at intelcompute.com> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to C<bug-html-formhandlerx-form-login at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=HTML-FormHandlerX-Form-Login>.  I will be notified, and then you will
+automatically be notified of progress on your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc HTML::FormHandlerX::Form::Login
+
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker (report bugs here)
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=HTML-FormHandlerX-Form-Login>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/HTML-FormHandlerX-Form-Login>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/HTML-FormHandlerX-Form-Login>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/HTML-FormHandlerX-Form-Login/>
+
+=back
+
+
+=head1 ACKNOWLEDGEMENTS
+
+gshank: Gerda Shank E<lt>gshank@cpan.orgE<gt>
+
+t0m: Tomas Doran E<lt>bobtfish@bobtfish.netE<gt>
+
+
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2012 Rob Brown.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
+
+
+=cut
+
+1; # End of HTML::FormHandlerX::Form::Login
