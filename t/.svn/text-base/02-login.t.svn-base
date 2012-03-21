@@ -19,6 +19,7 @@ lives_ok {
 } "Processed ok with email and password";
 
 ok( $form->validated, "validated ok");
+ 
 
 
 $email = '';

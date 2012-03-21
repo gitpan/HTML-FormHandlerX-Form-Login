@@ -14,11 +14,11 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.05
+Version 0.04
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.04';
 
 =head1 SYNOPSIS
 
@@ -283,14 +283,6 @@ The C<username> field, or use the specific C<email> field for extra validation (
 
 =cut
 
-has_field email => ( type         => 'Text',
-                     required     => 1,
-                     messages     => { required => 'Your email is required.' },
-                     tags         => { no_errors => 1 },
-                     wrapper_attr => { id => 'field-email' },
-                     inactive     => 1,
-                   );
-
 has_field username => ( type         => 'Text',
                         required     => 1,
                         messages     => { required => 'Your username is required.' },
@@ -298,6 +290,14 @@ has_field username => ( type         => 'Text',
                         wrapper_attr => { id => 'field-username' },
                         inactive     => 1,
                       );
+
+has_field email => ( type         => 'Text',
+                     required     => 1,
+                     messages     => { required => 'Your email is required.' },
+                     tags         => { no_errors => 1 },
+                     wrapper_attr => { id => 'field-email' },
+                     inactive     => 1,
+                   );
                       
 =head3 old_password
 
@@ -498,7 +498,7 @@ sub _munge_params
 		}
 	}
 	
-#	$self->next::method;
+	$self->next::method;
 }
 
 =head1 AUTHOR
