@@ -15,7 +15,7 @@ lives_ok {
 	$form = HTML::FormHandlerX::Form::Login->new( active => [ qw( old_password password confirm_password ) ] );
 } "Constructed ok and activated change-password fields";
 
-$form->render;
+$form->render_field('submit');
 
 ok( $form->field('submit')->value eq 'Change Password', "Submit button is " . $form->field('submit')->value);
 

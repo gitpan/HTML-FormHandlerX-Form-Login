@@ -14,11 +14,11 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 SYNOPSIS
 
@@ -196,6 +196,8 @@ use HTML::FormHandler::Moose;
 
 extends 'HTML::FormHandler';
 
+with 'HTML::FormHandler::Render::Simple';
+
 use Digest::SHA qw( sha512_hex );
 use Email::Valid;
 
@@ -283,7 +285,7 @@ The C<username> field, or use the specific C<email> field for extra validation (
 
 =cut
 
-has_field email => ( type         => 'Text',
+has_field email => ( type         => 'Email',
                      required     => 1,
                      messages     => { required => 'Your email is required.' },
                      tags         => { no_errors => 1 },
@@ -420,20 +422,10 @@ sub validate_token
 	}
 }
 
-=head3 html_attributes
 
-This method has been populated to ensure all fields in error have the C<error> CSS class assigned to the labels.
 
-=cut
-
-sub html_attributes
-{
-	my ($self, $field, $type, $attr, $result) = @_;
-    
-	if( $type eq 'label' && $result->has_errors )
-	{
-		push @{$attr->{class}}, 'error';
-	}
+before render_submit => sub {
+	my ($self, $field) = @_;
 
 	if ( $field->name eq 'submit' )
 	{
@@ -453,6 +445,22 @@ sub html_attributes
 		{
 			$field->value('Reset Password');
 		}		
+	}
+};
+
+=head3 html_attributes
+
+This method has been populated to ensure all fields in error have the C<error> CSS class assigned to the labels.
+
+=cut
+
+sub html_attributes
+{
+	my ($self, $field, $type, $attr, $result) = @_;
+    
+	if( $type eq 'label' && $result->has_errors )
+	{
+		push @{$attr->{class}}, 'error';
 	}
 }
 
@@ -517,7 +525,7 @@ sub _munge_params
 			$params->{ $field } = shift @token_parts;
 		}
 	}
-	
+
 	$self->next::method( $params );
 }
 

@@ -15,7 +15,7 @@ lives_ok {
 	$form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email ) ] );
 } "Constructed ok and activated forgot-password fields";
 
-$form->render;
+$form->render_field('submit');
 
 ok( $form->field('submit')->value eq 'Forgot Password', "Submit button is " . $form->field('submit')->value);
 

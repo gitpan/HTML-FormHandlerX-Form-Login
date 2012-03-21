@@ -52,7 +52,7 @@ ok( $form->validated, "validated ok");
 
 ok( $form->field('email')->value eq $email, "email came out ok");
 
-$form->render;
+$form->render_field('submit');
 
 ok( $form->field('submit')->value eq 'Reset Password', "Submit button is " . $form->field('submit')->value);
 
