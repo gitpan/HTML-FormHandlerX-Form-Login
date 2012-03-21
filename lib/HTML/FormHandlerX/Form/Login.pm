@@ -64,7 +64,7 @@ Coming back from an email link, if the form validates, you would show the passwo
  
  $form->process( params => { token => $token } );
 
-When trying to actually reset a password (kee...
+When trying to actually reset a password...
 
  $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token password confirm_password ) ] );
  
@@ -117,10 +117,10 @@ You need to supply a (private) C<token_salt> to make sure your C<token>s are not
 Tokens expire by default after 24 hours from the date/time of issue.  To change
 this, either supply an epoch timestamp of when to expire, or give a human-friendly format of how long to wait.  We like things like:
 
-2h - 2 hours
-3d - 3 days
-4w - 4 weeks
-5m - 5 months
+ 2h - 2 hours
+ 3d - 3 days
+ 4w - 4 weeks
+ 5m - 5 months
 
 If you specify C<add_token_field> the value of this field in the form will be included in the token.  This can be useful when the token is sent back, to identify the user.
 
@@ -153,7 +153,7 @@ You can safely skip this step, we check the token again when they/you actually t
 
 Setting the C<token_salt> is required, and must obviously be the same C<salt> as used in the forgot-password call.
 
-C<add_token_field> as you did during the forgot-password process.  When you render the form it will show the C<email> field, which probably wants disabling. 
+C<add_token_field> as you did during the forgot-password process.  This ill populate the unique identifier field for you. 
 
  $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token ) ] );
  
@@ -164,8 +164,6 @@ C<add_token_field> as you did during the forgot-password process.  When you rend
  $form->process( params => { token => $token } );
  
  if ( $form->validated ) { }
-
-If the form validates at this stage, 
 
 =head2 Reset Password - Stage 2
 
@@ -190,7 +188,7 @@ If you specified the C<token_field> as C<email>, you can now collect that from t
 
  $form->field( 'email' )->value;
 
-In this case.
+And now know which user to update.
 
 =cut
 
