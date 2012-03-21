@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 use Test::Exception;
 
 use HTML::FormHandlerX::Form::Login;
@@ -13,9 +13,12 @@ my $form;
 
 lives_ok {
 	$form = HTML::FormHandlerX::Form::Login->new( active => [ qw( old_password password confirm_password ) ] );
- 
-
 } "Constructed ok and activated change-password fields";
+
+$form->render;
+
+ok( $form->field('submit')->value eq 'Change Password', "Submit button is " . $form->field('submit')->value);
+
 
 lives_ok {
 	$form->process( params => { old_password     => $old_password,

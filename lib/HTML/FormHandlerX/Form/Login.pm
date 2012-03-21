@@ -14,11 +14,11 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 SYNOPSIS
 
@@ -371,7 +371,7 @@ The submit button.
 =cut
 
 has_field submit => ( type         => 'Submit',
-                      value        => 'Login',
+                      value        => '',
                       wrapper_attr => { id => 'field-submit', },
                     );
 
@@ -433,6 +433,26 @@ sub html_attributes
 	if( $type eq 'label' && $result->has_errors )
 	{
 		push @{$attr->{class}}, 'error';
+	}
+
+	if ( $field->name eq 'submit' )
+	{
+		if ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && $self->field('password')->is_active )
+		{
+			$field->value('Login');
+		}
+		elsif ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && ! $self->field('password')->is_active && ! $self->field('token')->is_active )
+		{
+			$field->value('Forgot Password');
+		}
+		elsif ( $self->field('old_password')->is_active && $self->field('password')->is_active && $self->field('confirm_password')->is_active )
+		{
+			$field->value('Change Password');
+		}
+		elsif ( $self->field('token')->is_active )
+		{
+			$field->value('Reset Password');
+		}		
 	}
 }
 

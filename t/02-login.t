@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 
 use HTML::FormHandlerX::Form::Login;
@@ -13,6 +13,10 @@ my $form;
 lives_ok {
 	$form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email password ) ] );
 } "Constructed ok and activated email and password";
+
+$form->render;
+
+ok( $form->field('submit')->value eq 'Login', "Submit button is " . $form->field('submit')->value);
 
 lives_ok {
 	$form->process( params => { email => $email, password => $password } );

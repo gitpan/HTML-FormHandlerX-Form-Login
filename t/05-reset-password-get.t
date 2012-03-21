@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 25;
+use Test::More tests => 26;
 use Test::Exception;
 
 use HTML::FormHandlerX::Form::Login;
@@ -51,6 +51,10 @@ ok( $form->validated, "validated ok");
 # diag $form->field('email')->value;
 
 ok( $form->field('email')->value eq $email, "email came out ok");
+
+$form->render;
+
+ok( $form->field('submit')->value eq 'Reset Password', "Submit button is " . $form->field('submit')->value);
 
 
 ####################
