@@ -7,6 +7,9 @@ Revision history for HTML-FormHandlerX-Form-Login
         Expanded docs, included next::method in _munge_params, thanks gshank.
         
 0.03    Tiny POD changes.
+
+0.04    Fixing version
+
         
         
         
