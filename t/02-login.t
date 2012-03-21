@@ -14,7 +14,6 @@ lives_ok {
 	$form = HTML::FormHandlerX::Form::Login->new( active => [ qw( email password ) ] );
 } "Constructed ok and activated email and password";
 
-$form->render_field('submit');
 
 ok( $form->field('submit')->value eq 'Login', "Submit button is " . $form->field('submit')->value);
 

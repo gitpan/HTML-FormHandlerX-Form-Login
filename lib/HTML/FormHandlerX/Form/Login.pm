@@ -14,11 +14,11 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 SYNOPSIS
 
@@ -195,8 +195,6 @@ And now know which user to update.
 use HTML::FormHandler::Moose;
 
 extends 'HTML::FormHandler';
-
-with 'HTML::FormHandler::Render::Simple';
 
 use Digest::SHA qw( sha512_hex );
 use Email::Valid;
@@ -424,29 +422,29 @@ sub validate_token
 
 
 
-before render_submit => sub {
-	my ($self, $field) = @_;
-
-	if ( $field->name eq 'submit' )
-	{
-		if ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && $self->field('password')->is_active )
-		{
-			$field->value('Login');
-		}
-		elsif ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && ! $self->field('password')->is_active && ! $self->field('token')->is_active )
-		{
-			$field->value('Forgot Password');
-		}
-		elsif ( $self->field('old_password')->is_active && $self->field('password')->is_active && $self->field('confirm_password')->is_active )
-		{
-			$field->value('Change Password');
-		}
-		elsif ( $self->field('token')->is_active )
-		{
-			$field->value('Reset Password');
-		}		
-	}
-};
+#before render_submit => sub {
+#	my ($self, $field) = @_;
+#
+#	if ( $field->name eq 'submit' )
+#	{
+#		if ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && $self->field('password')->is_active )
+#		{
+#			$field->value('Login');
+#		}
+#		elsif ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && ! $self->field('password')->is_active && ! $self->field('token')->is_active )
+#		{
+#			$field->value('Forgot Password');
+#		}
+#		elsif ( $self->field('old_password')->is_active && $self->field('password')->is_active && $self->field('confirm_password')->is_active )
+#		{
+#			$field->value('Change Password');
+#		}
+#		elsif ( $self->field('token')->is_active )
+#		{
+#			$field->value('Reset Password');
+#		}		
+#	}
+#};
 
 =head3 html_attributes
 
@@ -463,6 +461,27 @@ sub html_attributes
 		push @{$attr->{class}}, 'error';
 	}
 }
+
+after build_active => sub {
+	my $self = shift;
+
+	if ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && $self->field('password')->is_active )
+	{
+		$self->field('submit')->value('Login');
+	}
+	elsif ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && ! $self->field('password')->is_active && ! $self->field('token')->is_active )
+	{
+		$self->field('submit')->value('Forgot Password');
+	}
+	elsif ( $self->field('old_password')->is_active && $self->field('password')->is_active && $self->field('confirm_password')->is_active )
+	{
+		$self->field('submit')->value('Change Password');
+	}
+	elsif ( $self->field('token')->is_active )
+	{
+		$self->field('submit')->value('Reset Password');
+	}		
+};
 
 around token_expires => sub {
 	my $orig = shift;
