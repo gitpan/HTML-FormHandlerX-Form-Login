@@ -14,11 +14,11 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 SYNOPSIS
 
@@ -482,23 +482,23 @@ sub _build_token
 
 sub _munge_params
 {
-	my $self = shift;
+	my ( $self, $params ) = @_;
 	
-	if ( exists $self->params->{ token } )
+	if ( exists $params->{ token } )
 	{
 		# the order is drastically important
 		
-		my @token_parts = split( ':', $self->params->{ token } );
+		my @token_parts = split( ':', $params->{ token } );
 
 		foreach my $field ( $self->token_fields )
 		{
 			$self->field( $field )->inactive(0);
 
-			$self->params->{ $field } = shift @token_parts;
+			$params->{ $field } = shift @token_parts;
 		}
 	}
 	
-#	$self->next::method;
+	$self->next::method( $params );
 }
 
 =head1 AUTHOR
