@@ -23,3 +23,6 @@ Revision history for HTML-FormHandlerX-Form-Login
 
 0.10    reverted back without the role and got the submit value changing on active
 
+0.11    2012-03-21
+        change password label when changing or resetting password
+        

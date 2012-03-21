@@ -14,11 +14,11 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 SYNOPSIS
 
@@ -420,32 +420,6 @@ sub validate_token
 	}
 }
 
-
-
-#before render_submit => sub {
-#	my ($self, $field) = @_;
-#
-#	if ( $field->name eq 'submit' )
-#	{
-#		if ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && $self->field('password')->is_active )
-#		{
-#			$field->value('Login');
-#		}
-#		elsif ( ( $self->field('email')->is_active || $self->field('username')->is_active ) && ! $self->field('password')->is_active && ! $self->field('token')->is_active )
-#		{
-#			$field->value('Forgot Password');
-#		}
-#		elsif ( $self->field('old_password')->is_active && $self->field('password')->is_active && $self->field('confirm_password')->is_active )
-#		{
-#			$field->value('Change Password');
-#		}
-#		elsif ( $self->field('token')->is_active )
-#		{
-#			$field->value('Reset Password');
-#		}		
-#	}
-#};
-
 =head3 html_attributes
 
 This method has been populated to ensure all fields in error have the C<error> CSS class assigned to the labels.
@@ -475,10 +449,12 @@ after build_active => sub {
 	}
 	elsif ( $self->field('old_password')->is_active && $self->field('password')->is_active && $self->field('confirm_password')->is_active )
 	{
+		$self->field('password')->label('New Password');
 		$self->field('submit')->value('Change Password');
 	}
 	elsif ( $self->field('token')->is_active )
 	{
+		$self->field('password')->label('New Password');
 		$self->field('submit')->value('Reset Password');
 	}		
 };

@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 10;
+use Test::More tests => 11;
 use Test::Exception;
 
 use HTML::FormHandlerX::Form::Login;
@@ -18,6 +18,8 @@ lives_ok {
 
 
 ok( $form->field('submit')->value eq 'Change Password', "Submit button is " . $form->field('submit')->value);
+ok( $form->field('password')->label eq 'New Password', "Password label is " . $form->field('password')->label);
+
 
 
 lives_ok {
@@ -62,7 +64,7 @@ ok( ! $form->validated, "password is required");
 
 
 
-$old_password = 'foo';
+$password = 'foo';
 $confirm_password = 'baz';
 
 lives_ok {
