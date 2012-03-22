@@ -1,8 +1,5 @@
 package HTML::FormHandlerX::Form::Login;
 
-# TODO: disable the email field when coming with just a token
-
-
 use 5.006;
 
 use strict;
@@ -14,11 +11,11 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =cut
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 =head1 SYNOPSIS
 
@@ -153,7 +150,7 @@ You can safely skip this step, we check the token again when they/you actually t
 
 Setting the C<token_salt> is required, and must obviously be the same C<salt> as used in the forgot-password call.
 
-C<add_token_field> as you did during the forgot-password process.  This ill populate the unique identifier field for you. 
+C<add_token_field> as you did during the forgot-password process.  This will populate the unique identifier field for you. 
 
  $form = HTML::FormHandlerX::Form::Login->new( active => [ qw( token ) ] );
  
@@ -270,6 +267,7 @@ has_field token => ( type         => 'Hidden',
                      required     => 1,
                      messages     => { required => "Missing token." },
                      wrapper_attr => { id => 'field-token', },
+                     tags         => { no_errors => 1 },
                      inactive     => 1,
                    );
 
@@ -376,22 +374,6 @@ has_field submit => ( type         => 'Submit',
                     );
 
 =head2 Validation
-
-=head3 validate_email
-
-The internal validation of the email address field, using L<Email::Valid>.
-
-=cut
-
-sub validate_email
-{
-	my ( $self, $field ) = @_;
-
-	if ( ! Email::Valid->address( $field->value ) )
-	{
-		$field->add_error( "Your email address looks invalid." );
-	}
-}
 
 =head3 validate_token
 
