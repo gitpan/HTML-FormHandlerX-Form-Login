@@ -11,17 +11,19 @@ HTML::FormHandlerX::Form::Login - An HTML::FormHandler login form.
 
 =head1 VERSION
 
-Version 0.12
+Version 0.13
 
 =cut
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
+
+$VERSION = eval $VERSION;
 
 =head1 SYNOPSIS
 
 Performs login form validation, including changing passwords, forgotten passwords, and resetting passwords.
 
-If you are working under Catalyst, take a look at L<CatalystX::SimpleLogin>.
+If you are working under Catalyst, take a look at L<CatalystX::SimpleLogin> or L<CatalystX::Controller::Auth>.
 
 Login with either an C<email> B<or> C<username> parameter.
 
@@ -303,9 +305,12 @@ has_field username => ( type         => 'Text',
 
 Required when changing a known password.
 
+C<HTML::FormHandler> has a built-in length restriction for C<password> fields of 6-characters, we drop that to 1-character, it is up to you to come with your own rules.
+
 =cut
 
 has_field old_password => ( type         => 'Password',
+                            minlength    => 1,
                             required     => 1,
                             messages     => { required => "Your old password is required." },
                             tags         => { no_errors => 1 },
@@ -319,9 +324,12 @@ has_field old_password => ( type         => 'Password',
 
 Used for logging in, changing and/or resetting a password to something new.
 
+C<HTML::FormHandler> has a built-in length restriction for C<password> fields of 6-characters, we drop that to 1-character, it is up to you to come with your own rules.
+
 =cut
 
 has_field password => ( type         => 'Password',
+                        minlength    => 1,
                         required     => 1,
                         messages     => { required => "Your password is required." },
                         tags         => { no_errors => 1 },
@@ -505,6 +513,14 @@ sub _munge_params
 
 	$self->next::method( $params );
 }
+
+=head1 RENDERING
+
+This form does some subtle rendering tricks, renaming buttons and labels based on which fields are active.
+
+=head1 TODO
+
+Look at password type fields, pre-set char-length, etc. and/or import types from HTML::FormHandler directly.
 
 =head1 AUTHOR
 
